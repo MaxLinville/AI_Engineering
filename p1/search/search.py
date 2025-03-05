@@ -115,37 +115,59 @@ def depthFirstSearch(problem):
             
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    # add starting state to stack
-    stateStack = util.Stack()
-    stateStack.push((problem.getStartState(), []))
+    # add starting state to queue (shallowest instead of deepest)
+    stateQueue = util.Queue()
+    stateQueue.push((problem.getStartState(), []))
     visitedStates = []
 
-    while (not stateStack.isEmpty()):
-        # search all successors of current state and add to stack
-        currentState = stateStack.pop()
-        successors = problem.getSuccessors(currentState[0])
-        for successor in successors:
-            if (successor[0] not in visitedStates):
-                nextAction = currentState[1] + [successor[1]]
-                stateStack.push((successor[0], nextAction))
-
-
+    while (not stateQueue.isEmpty()):
+        # check if current state is the goal
+        currentState = stateQueue.pop()
         if (problem.isGoalState(currentState[0])):
             return currentState[1]   
                  
+        # skip if state has already been visited
         if (currentState[0] in visitedStates):
             continue
         else:
             visitedStates.append(currentState[0])
+        
+        # add successors to stack
+        for successor in problem.getSuccessors(currentState[0]):
+            if (successor[0] not in visitedStates):
+                nextAction = currentState[1] + [successor[1]]
+                stateQueue.push((successor[0], nextAction))
     
     return []
-    util.raiseNotDefined()
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # add starting state to queue (shallowest instead of deepest)
+    stateQueue = util.PriorityQueue()
+    stateQueue.push((problem.getStartState(), []), 0)
+    visitedStates = []
+
+    while (not stateQueue.isEmpty()):
+        # check if current state is the goal
+        currentState = stateQueue.pop()
+        if (problem.isGoalState(currentState[0])):
+            return currentState[1]   
+                 
+        # skip if state has already been visited
+        if (currentState[0] in visitedStates):
+            continue
+        else:
+            visitedStates.append(currentState[0])
+        
+        # add successors to stack
+        for successor in problem.getSuccessors(currentState[0]):
+            if (successor[0] not in visitedStates):
+                nextAction = currentState[1] + [successor[1]]
+                priority = problem.getCostOfActions(nextAction)
+                stateQueue.push((successor[0], nextAction), priority)
+    
+    return []
+
 
 def nullHeuristic(state, problem=None):
     """
@@ -156,8 +178,31 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # add starting state to queue (shallowest instead of deepest)
+    stateQueue = util.PriorityQueue()
+    stateQueue.push((problem.getStartState(), []), 0)
+    visitedStates = []
+
+    while (not stateQueue.isEmpty()):
+        # check if current state is the goal
+        currentState = stateQueue.pop()
+        if (problem.isGoalState(currentState[0])):
+            return currentState[1]   
+                 
+        # skip if state has already been visited
+        if (currentState[0] in visitedStates):
+            continue
+        else:
+            visitedStates.append(currentState[0])
+        
+        # add successors to stack
+        for successor in problem.getSuccessors(currentState[0]):
+            if (successor[0] not in visitedStates):
+                nextAction = currentState[1] + [successor[1]]
+                priority = problem.getCostOfActions(nextAction) + heuristic(successor[0], problem)
+                stateQueue.push((successor[0], nextAction), priority)
+    
+    return []
 
 
 # Abbreviations

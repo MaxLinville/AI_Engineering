@@ -288,6 +288,9 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+        # Initialize state: Pacman starts at his position with no corners visited
+        self.startState = (self.startingPosition, set())
+        self.startingGameState = startingGameState
 
     def getStartState(self):
         """
@@ -295,14 +298,15 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return (self.startingPosition, set())
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        visitedCorners = state[1]
+        return visitedCorners == set(self.corners)
 
     def getSuccessors(self, state):
         """
@@ -314,17 +318,20 @@ class CornersProblem(search.SearchProblem):
             state, 'action' is the action required to get there, and 'stepCost'
             is the incremental cost of expanding to that successor
         """
-
+        position, visitedCorners = state
+        x, y = position
         successors = []
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
             # Here's a code snippet for figuring out whether a new position hits a wall:
-            #   x,y = currentPosition
-            #   dx, dy = Actions.directionToVector(action)
-            #   nextx, nexty = int(x + dx), int(y + dy)
-            #   hitsWall = self.walls[nextx][nexty]
-
-            "*** YOUR CODE HERE ***"
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            hitsWall = self.walls[nextx][nexty]
+            if not hitsWall:
+                nextCorners = set(visitedCorners)  # Copy visited corners
+                if (nextx, nexty) in self.corners:
+                    nextCorners.add((nextx, nexty))  # Mark corner as visited
+                successors.append((((nextx, nexty), set(nextCorners)), action, 1))
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -358,10 +365,21 @@ def cornersHeuristic(state, problem):
     """
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
-
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
-
+    position, visitedCorners = state
+    if len(visitedCorners) == 4:
+        return 0
+    # find distance to closest corner
+    maxDistance = -1
+    for corner in corners:
+        if corner not in visitedCorners:
+            # find distance to corner (first tried minimum manhattan, was 2/3)
+            # thinking that max is better since it puts a higher weight on corners being farther away
+            distance = util.manhattanDistance(position, corner)
+            if distance > maxDistance:
+                maxDistance = distance
+    return maxDistance
+    
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
     def __init__(self):
@@ -454,7 +472,23 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    foodList = foodGrid.asList()
+
+    # 0 when goal complete (no food left)
+    if len(foodList) == 0:
+        return 0 
+    
+    # same method as in corners problem, max manhattan distance to a single food
+    # manhattan distance not as good here, euclidian?
+    # euclidian performs same as manhattan, try maze?
+    # MAZE WORKS VERY GOOD
+    
+    maxDistance = -1
+    for foodpos in foodList:
+        distance = mazeDistance(position, foodpos, problem.startingGameState)
+        if distance > maxDistance:
+            maxDistance = distance
+    return maxDistance
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -485,7 +519,9 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # finding closest dot: search all directions, then for each of those search those, etc.
+        # its just breadth first search
+        return search.bfs(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -521,7 +557,8 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        if self.food[x][y]:
+            return True
 
 def mazeDistance(point1, point2, gameState):
     """
